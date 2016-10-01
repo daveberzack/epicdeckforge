@@ -1,0 +1,141 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+  <meta content="utf-8" http-equiv="encoding">
+  <title>Epic Deck Forge</title>
+</head>
+<body>
+<div id="all" ng-app="sortableApp" ng-controller="sortableController">
+
+    <!---->
+
+  <div id="left">
+
+    <img id="logo" src="img/logo.png"/>
+    <ul id="metrics" ng-cloak>
+        <li ng-repeat="metric in metrics" class="metric">
+            <div class="metric-info">
+              <div class="metric-name">{{metric.name}} <a href="#" ng-click="showMetricTip($index)"><img src="img/question.png"/></a></div>
+              <ul class="metric-values">
+                <li ng-repeat="var in metric.vars" title="{{var.name}}" ng-hide="var.value<1">{{var.value}}</li>
+              </ul>
+            </div>
+            <div class="clearfix"></div>
+            <div class="metric-bar"><div class="inner">
+              <div class="metric-bar-portion" ng-repeat="var in metric.vars" title="{{var.name}}" style="background-color:{{var.color}}; width:{{ 100*(var.value-metric.min)/(metric.max-metric.min) }}%"></div>
+            </div>
+        </li>
+    </ul>
+
+    <a id="hand-button" href="#" ng-click="showHand()" ng-class="{noHand: !checkDeckSize()}"><img src="img/testdraw.png"/></a>
+  </div>
+  <div id="right"> 
+
+    <div class="card-list-holder" ng-cloak>
+      <div class="list-header">
+        <input id="deck-name" ng-model="deckName" ng-blur="saveDeck()" ng-change="saveDeck()"/>
+        <a id="deck-clear" href="#" onclick="$('#clear-dialog').show();"><img src="img/deckclear.png"/></a>
+        <div id="deck-icons">
+          <a href="#" ng-click="changeDeck(0)" class="deck-icon"><img ng-src="{{deckIndex==0 && 'img/deckon.png' || 'img/deckoff.png'}}"/></a>
+          <a href="#" ng-click="changeDeck(1)" class="deck-icon"><img ng-src="{{deckIndex==1 && 'img/deckon.png' || 'img/deckoff.png'}}"/></a>
+          <a href="#" ng-click="changeDeck(2)" class="deck-icon"><img ng-src="{{deckIndex==2 && 'img/deckon.png' || 'img/deckoff.png'}}"/></a>
+        </div>
+      </div>
+      <div class="clearfix"></div>
+
+      <div id="instructions" ng-hide="used.length>0">
+        <p>This is a tool to construct decks for the Epic card game.</p>
+        <p>The panel on the right includes every card available, with icons for the color, cost and type (champion or event). You can filter the list using the icons at the top, or search by entering text into the field.</p>
+        <p>This panel displays the deck you're working on. Add and remove cards by dragging them or double-clicking on <span class="img" style="width:40px"><img src="img/icons.png"/></span> on the left side. You can toggle the number of copies by clicking on the <span class="img" style="width:14px"><img src="img/orb.png"/></span>. You can change the deck name in the field at the top, clear the deck with the <span class="img" style="width:14px"><img src="img/deckclear.png"/></span> or switch between decks with the <span class="img" style="width:17px"><img src="img/deckon.png" style="height:18px; top:-2px;"/></span> icons. Decks will be automatically saved locally, so don't clear your cookies.
+        <p>The graphs on the left show useful metrics and analytics about your deck. Hover over a number or a segment of the graph to see what it represents, or click the <span class="img" style="width:15px"><img src="img/question.png"/></span> for a description of that metric.</p>
+        <p>The link below those graphs lets you preview opening hands by instantly shuffling and drawing cards from your deck. You can also mulligan and draw additional cards.</p>
+        <p>Epic Deck Forge was created by Dave Berzack to help players build and tweak decks in the full constructed format. I hope you enjoy using it. If you have any ideas for improvement or a new metric you'd like to suggest, message me at <a href="mailto:dave@epicdeckforge.com"/>dave@epicdeckforge.com</a></p>
+      </div>
+
+      <div class="list-scroll"><ul id="used" ui-sortable="sortableOptions" class="card-list" ng-model="used">
+        <li class="card color-{{card.color}}" ng-repeat="card in used" ng-mouseDown="onDownCard(card)" ng-mouseUp="onUpCard()">
+          <div class="card-icons" ng-dblclick="unuseCard(card)">
+            <img class="card-color" src="img/color{{card.color}}.png"/>
+            <img class="card-cost" src="img/cost{{card.cost}}.png"/>
+            <img class="card-type" src="img/type{{card.event}}.png"/>
+          </div>
+          <p class="card-name">{{card.name}}</p>
+          <a class="card-quantity" href="#" ng-click="card.quantity=card.quantity%3+1; onListChanged()">
+            <img src="img/qty{{card.quantity}}.png"/>
+          </a>
+        </li>
+      </ul></div>
+    </div>
+
+    <div class="card-list-holder" ng-cloak>
+      <div class="list-header filters">
+        <input id="filter-text" ng-model="filters.filterText"/>
+        <div id="filter-icons">
+          <a href="#" ng-click="filters.hideGreen=!filters.hideGreen" ng-class="{dim: filters.hideGreen}"><img src="img/filter_green.png"/></a>
+          <a href="#" ng-click="filters.hideBlue=!filters.hideBlue" ng-class="{dim: filters.hideBlue}"><img src="img/filter_blue.png"/></a>
+          <a href="#" ng-click="filters.hideRed=!filters.hideRed" ng-class="{dim: filters.hideRed}"><img src="img/filter_red.png"/></a>
+          <a href="#" ng-click="filters.hideWhite=!filters.hideWhite" ng-class="{dim: filters.hideWhite}"><img src="img/filter_white.png"/></a>
+          <a href="#" ng-click="filters.hideEvent=!filters.hideEvent" ng-class="{dim: filters.hideEvent}"><img src="img/type1.png"/></a>
+          <a href="#" ng-click="filters.hideChampion=!filters.hideChampion" ng-class="{dim: filters.hideChampion}"><img src="img/type0.png"/></a>
+          <a href="#" ng-click="filters.hideCost0=!filters.hideCost0" ng-class="{dim: filters.hideCost0}"><img src="img/cost0.png"/></a>
+          <a href="#" ng-click="filters.hideCost1=!filters.hideCost1" ng-class="{dim: filters.hideCost1}"><img src="img/cost1.png"/></a>
+        </div>
+      </div>
+      <div class="list-scroll"><ul id="unused" ui-sortable="sortableOptions" class="card-list" ng-model="unused">
+        <li class="card color-{{card.color}}" ng-repeat="card in unused" ng-mouseDown="onDownCard(card)" ng-mouseUp="onUpCard()" ng-hide="checkFilter(card)">
+          <div class="card-icons" ng-dblclick="useCard(card)">
+            <img class="card-color" src="img/color{{card.color}}.png"/>
+            <img class="card-cost" src="img/cost{{card.cost}}.png"/>
+            <img class="card-type" src="img/type{{card.event}}.png"/>
+          </div>
+          <p class="card-name">{{card.name}}</p>
+          <div class="card-quantity" ng-init="card.quantity=1"><img src="img/qty1.png"/></div>
+        </li>
+      </ul></div>
+    </div>
+
+  </div><!-- end right -->
+
+  <img id="card-image" src="img/cards/{{currentCard.image}}-215x300.jpg" ng-hide="currentCard==null" />
+  
+  <div id="clear-dialog">
+    Reset this deck?<br/>
+    <a href="#" onclick="$('#clear-dialog').hide();" ng-click="clearDeck()">Yes</a>
+    <a href="#" onclick="$('#clear-dialog').hide();">No</a>
+  </div>
+
+  <div id="metric-dialog" ng-click="hideMetricTip()">
+    <div>This is the total number of cards you've added (including up to three copies of each one) out of the 60 cards required for a constructed deck.</div>
+    <div>This metric shows the composition of your deck, by alignment. Each alignment is divided into two portions. The darker one shows cards that have an ally power or loyalty effect, to show how helpful it is for your deck to have a significant percentage of that alignment.</div>
+    <div>Velocity shows how quickly you can play cards from your hand. 0-cost cards are very helpful. And you should try to have enough events or ambush champions to play on your opponent's turn.</div>
+    <div>This metric shows the various types of card draw abilities. This is obviously helpful, and very important in a high-velocity deck. Note that some of these are less reliable: you may not use a card's draw-2 option, recycle requires cards in your discard pile, and some card abilities may not end up triggering.</div>
+    <div>This metric shows both direct damage (which can target an opponent) and removal abilities (to break, banish or otherwise deal with champions).</div>
+    <div>This metric shows how many champions you have in the deck. Also, champions are divided by their offense stats, to give a sense of your overall attacking power.</div>
+    <div>This graph shows the prominence of the top card types in your deck. This can be useful when building a deck focused on one or more card types.</div>
+    <img id="metric-dialog-close" src="img/close.png"/>
+  </div>
+  <div id="splash"> 
+    <img src="img/splashby.png"/>
+  </div>
+
+  <div id="hand">
+    <div id="hand-cards" style="left:{{ getHandOffset() }}">
+    <img class="hand-card" ng-class="{selected: card.isSelected}" ng-repeat="card in testHand track by $index" src="img/cards/{{card.image}}-215x300.jpg" ng-click="selectCard(card)" />
+    </div>
+    <a id="hand-close" href="#" ng-click="hideHand()"><img src="img/close.png"/></a>
+    <div id="hand-buttons">
+      <a href="#" ng-click="doMulligan()" ng-class="{noMulligan: !checkMulligan()}">Mulligan</a>
+      <a href="#" ng-click="doDraw()">Draw</a>
+      <a href="#" ng-click="showHand()">New Hand</a>
+    </div>
+  </div>
+
+</div><!--end all-->
+<link rel="stylesheet" href="style.css">
+<script src="js/jquery-2.1.4.min.js"></script>
+<script src="js/jquery-ui.min.js"></script>
+<script src="js/angular.min.js"></script>
+<script src="js/sortable.js"></script>
+<script src="js/script.js"></script>
+</div>
